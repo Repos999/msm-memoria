@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSM Memory Game</title>
+    <style>
+        body {
+            background-color: #2b1d3d; 
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding-top: 10px;
+        }
+
+        h2 { 
+            text-shadow: 2px 2px 4px #000; 
+            text-align: center; 
+            margin: 10px 0; 
+            font-size: 24px; 
+        }
+
+        /* -------------------------------------- */
+        /* MENUS (Islands & Levels)               */
+        /* -------------------------------------- */
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            max-width: 400px;
+            margin-top: 30px;
+        }
+
+        .menu-container h3 {
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .btn-menu {
+            background-color: #794a8d;
+            border: 3px solid #4a295c;
+            color: white;
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        .btn-menu:hover, .btn-menu:active {
+            transform: scale(1.05);
+            background-color: #925ba8;
+        }
+
+        .btn-voltar-menu {
+            background-color: #f44336;
+            margin-top: 10px;
+        }
+
+        /* -------------------------------------- */
+        /* GAME BOARD                             */
+        /* -------------------------------------- */
+        #telaJogo {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .controles-topo {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn-topo { 
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 5px; 
+            font-weight: bold; 
+            cursor: pointer;
+        }
+
+        .btn-voltar { background-color: #4CAF50; color: white; }
+        .btn-limpar { background-color: #ff9800; color: white; }
+
+        .grid-container {
+            display: grid;
+            gap: 2px;
+            width: 98vw;
+            max-width: 600px; 
+            justify-content: center;
+        }
+
+        .quadrado {
+            background-color: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1 / 1; 
+        }
+
+        .quadrado.ativo {
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .quadrado.ativo:active img {
+            transform: scale(0.9);
+        }
+
+        .quadrado.vazio {
+            pointer-events: none;
+        }
+
+        .quadrado img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.6)); 
+        }
+
+        /* -------------------------------------- */
+        /* MODAL (Monster Selection List)         */
+        /* -------------------------------------- */
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 10;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-conteudo {
+            background-color: #4a295c;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #794a8d;
+            width: 90%;
+            max-width: 350px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-conteudo h3 { margin-top: 0; text-align: center; font-size: 18px; }
+
+        #buscaMonstro {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            margin-bottom: 10px;
+            font-size: 16px;
+            background-color: #e0d4e8;
+        }
+
+        .lista-monstros {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .categoria-titulo {
+            background-color: #311c47;
+            color: #ffd700;
+            text-align: center;
+            font-weight: bold;
+            padding: 5px;
+            margin-top: 10px;
+            border-radius: 5px;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 1px;
+            border: 1px solid #221233;
+        }
+
+        .item-lista {
+            display: flex;
+            align-items: center;
+            background-color: #3b284f;
+            border: 1px solid #2b1d3d;
+            border-radius: 8px;
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        .item-lista img {
+            width: 45px;
+            height: 45px;
+            object-fit: contain;
+            margin-right: 15px;
+            border-radius: 5px;
+        }
+
+        .item-lista span { font-weight: bold; font-size: 14px; }
+        .item-lista:active { background-color: #4CAF50; }
+
+        .btn-cancelar { 
+            background-color: #f44336; color: white; width: 100%; 
+            padding: 12px; border: none; border-radius: 5px; font-weight: bold; margin-top: 10px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 id="tituloPrincipal">MSM Memory Game</h2>
+
+    <!-- SCREEN 1: ISLAND SELECTION -->
+    <div id="telaMenuIlha" class="menu-container">
+        <h3>Choose an Island</h3>
+        <button class="btn-menu" style="background-color: #4CAF50; border-color: #2E7D32;" onclick="selecionarIlha('plant')">🌿 Plant Island</button>
+        <button class="btn-menu" style="background-color: #2196F3; border-color: #1565C0;" onclick="selecionarIlha('cold')">❄️ Cold Island</button>
+    </div>
+
+    <!-- SCREEN 2: LEVEL SELECTION -->
+    <div id="telaMenuNivel" class="menu-container" style="display: none;">
+        <h3>Choose Level Layout</h3>
+        <button class="btn-menu" onclick="iniciarNivel('nivel8')">Level 8 (🎵)</button>
+        <button class="btn-menu" onclick="iniciarNivel('nivel9v1')">Level 9 V1 (💜)</button>
+        <button class="btn-menu" onclick="iniciarNivel('nivel9v2')">Level 9 V2</button>
+        <button class="btn-menu btn-voltar-menu" onclick="voltarParaIlhas()">🔙 Back</button>
+    </div>
+    
+    <!-- SCREEN 3: GAME BOARD -->
+    <div id="telaJogo">
+        <div class="controles-topo">
+            <button class="btn-topo btn-voltar" onclick="sairDoJogo()">🔙 Menu</button>
+            <button class="btn-topo btn-limpar" onclick="limparTabuleiro()">🧹 Clear Board</button>
+        </div>
+        
+        <div class="grid-container" id="tabuleiro"></div>
+    </div>
+
+    <!-- MODAL (LIST) -->
+    <div id="modalMonstros" class="modal">
+        <div class="modal-conteudo">
+            <h3>Choose Image:</h3>
+            <input type="text" id="buscaMonstro" placeholder="Search..." onkeyup="filtrarLista()">
+            
+            <div id="listaOpcoes" class="lista-monstros"></div>
+            
+            <button class="btn-cancelar" onclick="fecharModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const urlBase = "https://raw.githubusercontent.com/Repos999/Memory/refs/heads/main/";
+        const imagemFundo = urlBase + "monster_portrait_random.avif";
+
+        let ilhaAtual = 'plant';
+        let itensDataRender = []; 
+
+        // Level Matrix
+        const layouts = {
+            nivel8: [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+            ],
+            nivel9v1: [
+                [0, 1, 1, 1, 1, 1, 1, 1, 0],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [0, 1, 1, 1, 1, 1, 1, 1, 0],
+                [0, 0, 1, 1, 1, 1, 1, 0, 0],
+                [0, 0, 0, 1, 1, 1, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0, 0]
+            ],
+            nivel9v2: [
+                [1, 1, 1, 1, 0, 1, 1, 0],
+                [1, 1, 1, 0, 1, 1, 0, 1],
+                [1, 1, 0, 1, 1, 0, 1, 1],
+                [1, 0, 1, 1, 0, 1, 1, 1],
+                [0, 1, 1, 0, 1, 1, 1, 1]
+            ]
+        };
+
+        // --- DATA ARRAYS ---
+        const itensRecursos = [
+            { nome: "🧹 Restore Square (Clear)", arquivo: "", categoria: "Resources" },
+            { nome: "⬛ Blank Portrait", arquivo: "monster_portrait_blank.avif", categoria: "Resources" },
+            { nome: "Coin", arquivo: "coin.avif", categoria: "Resources" },
+            { nome: "Treats", arquivo: "food.avif", categoria: "Resources" },
+            { nome: "Shards", arquivo: "shard.avif", categoria: "Resources" },
+            { nome: "Diamonds", arquivo: "diamond.avif", categoria: "Resources" },
+            { nome: "Starpower", arquivo: "star_power.avif", categoria: "Resources" },
+            { nome: "Keys", arquivo: "keys.avif", categoria: "Resources" },
+            { nome: "Relics", arquivo: "relic.avif", categoria: "Resources" },
+            { nome: "XP", arquivo: "xp.avif", categoria: "Resources" }
+        ];
+
+        const itensDipsters = [
+            { nome: "Do", arquivo: "monster_portrait_square_q01.avif", categoria: "Dipsters" },
+            { nome: "Re", arquivo: "monster_portrait_square_q02.avif", categoria: "Dipsters" },
+            { nome: "Mi", arquivo: "monster_portrait_square_q03.avif", categoria: "Dipsters" },
+            { nome: "Fa", arquivo: "monster_portrait_square_q04.avif", categoria: "Dipsters" },
+            { nome: "Sol", arquivo: "monster_portrait_square_q05.avif", categoria: "Dipsters" },
+            { nome: "La", arquivo: "monster_portrait_square_q06.avif", categoria: "Dipsters" },
+            { nome: "Ti", arquivo: "monster_portrait_square_q07.avif", categoria: "Dipsters" }
+        ];
+
+        const monstrosPlant = [
+            // COMMON
+            { nome: "Potbelly", arquivo: "monster_portrait_square_b.avif", categoria: "Common" },
+            { nome: "Noggin", arquivo: "monster_portrait_square_c.avif", categoria: "Common" },
+            { nome: "Toe Jammer", arquivo: "monster_portrait_square_d.avif", categoria: "Common" },
+            { nome: "Mammott", arquivo: "monster_portrait_square_e.avif", categoria: "Common" },
+            { nome: "Shrubb", arquivo: "monster_portrait_square_bc.avif", categoria: "Common" },
+            { nome: "Oaktopus", arquivo: "monster_portrait_square_bd.avif", categoria: "Common" },
+            { nome: "Furcorn", arquivo: "monster_portrait_square_be.avif", categoria: "Common" },
+            { nome: "Fwog", arquivo: "monster_portrait_square_cd.avif", categoria: "Common" },
+            { nome: "Drumpler", arquivo: "monster_portrait_square_ce.avif", categoria: "Common" },
+            { nome: "Maw", arquivo: "monster_portrait_square_de.avif", categoria: "Common" },
+            { nome: "Pummel", arquivo: "monster_portrait_square_bcd.avif", categoria: "Common" },
+            { nome: "Clamble", arquivo: "monster_portrait_square_bce.avif", categoria: "Common" },
+            { nome: "Bowgart", arquivo: "monster_portrait_square_bde.avif", categoria: "Common" },
+            { nome: "T-Rox", arquivo: "monster_portrait_square_cde.avif", categoria: "Common" },
+            { nome: "Entbrat", arquivo: "monster_portrait_square_bcde.avif", categoria: "Common" },
+            { nome: "Wubbox", arquivo: "monster_portrait_square_f.avif", categoria: "Common" },
+            { nome: "Ghazt", arquivo: "monster_portrait_square_g.avif", categoria: "Common" },
+            { nome: "G'joob", arquivo: "monster_portrait_square_p02.avif", categoria: "Common" },
+            { nome: "Punkleton", arquivo: "monster_portrait_square_s01.avif", categoria: "Common" },
+            
+            // RARE
+            { nome: "Rare Potbelly", arquivo: "monster_portrait_square_b_rare.avif", categoria: "Rare" },
+            { nome: "Rare Noggin", arquivo: "monster_portrait_square_c_rare.avif", categoria: "Rare" },
+            { nome: "Rare Toe Jammer", arquivo: "monster_portrait_square_d_rare.avif", categoria: "Rare" },
+            { nome: "Rare Mammott", arquivo: "monster_portrait_square_e_rare.avif", categoria: "Rare" },
+            { nome: "Rare Shrubb", arquivo: "monster_portrait_square_bc_rare.avif", categoria: "Rare" },
+            { nome: "Rare Oaktopus", arquivo: "monster_portrait_square_bd_rare.avif", categoria: "Rare" },
+            { nome: "Rare Furcorn", arquivo: "monster_portrait_square_be_rare.avif", categoria: "Rare" },
+            { nome: "Rare Fwog", arquivo: "monster_portrait_square_cd_rare.avif", categoria: "Rare" },
+            { nome: "Rare Drumpler", arquivo: "monster_portrait_square_ce_rare.avif", categoria: "Rare" },
+            { nome: "Rare Maw", arquivo: "monster_portrait_square_de_rare.avif", categoria: "Rare" },
+            { nome: "Rare Pummel", arquivo: "monster_portrait_square_bcd_rare.avif", categoria: "Rare" },
+            { nome: "Rare Clamble", arquivo: "monster_portrait_square_bce_rare.avif", categoria: "Rare" },
+            { nome: "Rare Bowgart", arquivo: "monster_portrait_square_bde_rare.avif", categoria: "Rare" },
+            { nome: "Rare T-Rox", arquivo: "monster_portrait_square_cde_rare.avif", categoria: "Rare" },
+            { nome: "Rare Entbrat", arquivo: "monster_portrait_square_bcde_rare.avif", categoria: "Rare" },
+            { nome: "Rare Wubbox", arquivo: "monster_portrait_square_f_rare.avif", categoria: "Rare" },
+            { nome: "Rare Ghazt", arquivo: "monster_portrait_square_g_rare.avif", categoria: "Rare" },
+            { nome: "Rare G'joob", arquivo: "monster_portrait_square_p02_rare.avif", categoria: "Rare" },
+            { nome: "Rare Punkleton", arquivo: "monster_portrait_square_s01_rare.avif", categoria: "Rare" },
+            
+            // EPIC
+            { nome: "Epic Potbelly", arquivo: "monster_portrait_square_b_epic.avif", categoria: "Epic" },
+            { nome: "Epic Noggin", arquivo: "monster_portrait_square_c_epic.avif", categoria: "Epic" },
+            { nome: "Epic Toe Jammer", arquivo: "monster_portrait_square_d_epic.avif", categoria: "Epic" },
+            { nome: "Epic Mammott", arquivo: "monster_portrait_square_e_epic.avif", categoria: "Epic" },
+            { nome: "Epic Shrubb", arquivo: "monster_portrait_square_bc_epic.avif", categoria: "Epic" },
+            { nome: "Epic Oaktopus", arquivo: "monster_portrait_square_bd_epic.avif", categoria: "Epic" },
+            { nome: "Epic Furcorn", arquivo: "monster_portrait_square_be_epic.avif", categoria: "Epic" },
+            { nome: "Epic Fwog", arquivo: "monster_portrait_square_cd_epic.avif", categoria: "Epic" },
+            { nome: "Epic Drumpler", arquivo: "monster_portrait_square_ce_epic.avif", categoria: "Epic" },
+            { nome: "Epic Maw", arquivo: "monster_portrait_square_de_epic.avif", categoria: "Epic" },
+            { nome: "Epic Pummel", arquivo: "monster_portrait_square_bcd_epic.avif", categoria: "Epic" },
+            { nome: "Epic Clamble", arquivo: "monster_portrait_square_bce_epic.avif", categoria: "Epic" },
+            { nome: "Epic Bowgart", arquivo: "monster_portrait_square_bde_epic.avif", categoria: "Epic" },
+            { nome: "Epic T-Rox", arquivo: "monster_portrait_square_cde_epic.avif", categoria: "Epic" },
+            { nome: "Epic Entbrat", arquivo: "monster_portrait_square_bcde_epic.avif", categoria: "Epic" },
+            { nome: "Epic Wubbox", arquivo: "https://raw.githubusercontent.com/Repos999/Memory/refs/heads/main/monster_portrait_square_f_epic_plant.avif", categoria: "Epic" },
+            { nome: "Epic Ghazt", arquivo: "monster_portrait_square_g_epic.avif", categoria: "Epic" },
+            { nome: "Epic G'joob", arquivo: "monster_portrait_square_p02_epic.avif", categoria: "Epic" },
+            { nome: "Epic Punkleton", arquivo: "monster_portrait_square_s01_epic.avif", categoria: "Epic" },
+
+            // SPECIALS
+            { nome: "Shugabush", arquivo: "monster_portrait_square_z01.avif", categoria: "Specials" },
+            { nome: "Tawkerr", arquivo: "monster_portrait_square_VOC_01.avif", categoria: "Specials" },
+            { nome: "Parlsona", arquivo: "monster_portrait_square_VOC_02.avif", categoria: "Specials" }
+        ];
+
+        const monstrosCold = [
+            // COMMON
+            { nome: "Mammott", arquivo: "monster_portrait_square_e.avif", categoria: "Common" },
+            { nome: "Toe Jammer", arquivo: "monster_portrait_square_d.avif", categoria: "Common" },
+            { nome: "Potbelly", arquivo: "monster_portrait_square_b.avif", categoria: "Common" },
+            { nome: "Tweedle", arquivo: "monster_portrait_square_a.avif", categoria: "Common" },
+            { nome: "Maw", arquivo: "monster_portrait_square_de.avif", categoria: "Common" },
+            { nome: "Furcorn", arquivo: "monster_portrait_square_be.avif", categoria: "Common" },
+            { nome: "Oaktopus", arquivo: "monster_portrait_square_bd.avif", categoria: "Common" },
+            { nome: "Dandidoo", arquivo: "monster_portrait_square_ab.avif", categoria: "Common" },
+            { nome: "Pango", arquivo: "monster_portrait_square_ae.avif", categoria: "Common" },
+            { nome: "Quibble", arquivo: "monster_portrait_square_ad.avif", categoria: "Common" },
+            { nome: "Bowgart", arquivo: "monster_portrait_square_bde.avif", categoria: "Common" },
+            { nome: "Spunge", arquivo: "monster_portrait_square_abd.avif", categoria: "Common" },
+            { nome: "Thumpies", arquivo: "monster_portrait_square_abe.avif", categoria: "Common" },
+            { nome: "Congle", arquivo: "monster_portrait_square_ade.avif", categoria: "Common" },
+            { nome: "Deedge", arquivo: "monster_portrait_square_abde.avif", categoria: "Common" },
+            { nome: "Wubbox", arquivo: "monster_portrait_square_f.avif", categoria: "Common" },
+            { nome: "Grumpyre", arquivo: "monster_portrait_square_j.avif", categoria: "Common" },
+            { nome: "Yool", arquivo: "monster_portrait_square_s02.avif", categoria: "Common" },
+            { nome: "Strombonin", arquivo: "monster_portrait_square_p03.avif", categoria: "Common" },
+
+            // RARE
+            { nome: "Rare Mammott", arquivo: "monster_portrait_square_e_rare.avif", categoria: "Rare" },
+            { nome: "Rare Toe Jammer", arquivo: "monster_portrait_square_d_rare.avif", categoria: "Rare" },
+            { nome: "Rare Potbelly", arquivo: "monster_portrait_square_b_rare.avif", categoria: "Rare" },
+            { nome: "Rare Tweedle", arquivo: "monster_portrait_square_a_rare.avif", categoria: "Rare" },
+            { nome: "Rare Maw", arquivo: "monster_portrait_square_de_rare.avif", categoria: "Rare" },
+            { nome: "Rare Furcorn", arquivo: "monster_portrait_square_be_rare.avif", categoria: "Rare" },
+            { nome: "Rare Oaktopus", arquivo: "monster_portrait_square_bd_rare.avif", categoria: "Rare" },
+            { nome: "Rare Dandidoo", arquivo: "monster_portrait_square_ab_rare.avif", categoria: "Rare" },
+            { nome: "Rare Pango", arquivo: "monster_portrait_square_ae_rare.avif", categoria: "Rare" },
+            { nome: "Rare Quibble", arquivo: "monster_portrait_square_ad_rare.avif", categoria: "Rare" },
+            { nome: "Rare Bowgart", arquivo: "monster_portrait_square_bde_rare.avif", categoria: "Rare" },
+            { nome: "Rare Spunge", arquivo: "monster_portrait_square_abd_rare.avif", categoria: "Rare" },
+            { nome: "Rare Thumpies", arquivo: "monster_portrait_square_abe_rare.avif", categoria: "Rare" },
+            { nome: "Rare Congle", arquivo: "monster_portrait_square_ade_rare.avif", categoria: "Rare" },
+            { nome: "Rare Deedge", arquivo: "monster_portrait_square_abde_rare.avif", categoria: "Rare" },
+            { nome: "Rare Wubbox", arquivo: "monster_portrait_square_f_rare.avif", categoria: "Rare" },
+            { nome: "Rare Grumpyre", arquivo: "monster_portrait_square_j_rare.avif", categoria: "Rare" },
+            { nome: "Rare Yool", arquivo: "monster_portrait_square_s02_rare.avif", categoria: "Rare" },
+            { nome: "Rare Strombonin", arquivo: "monster_portrait_square_p03_rare.avif", categoria: "Rare" },
+
+            // EPIC
+            { nome: "Epic Mammott", arquivo: "monster_portrait_square_e_epic.avif", categoria: "Epic" },
+            { nome: "Epic Toe Jammer", arquivo: "monster_portrait_square_d_epic.avif", categoria: "Epic" },
+            { nome: "Epic Potbelly", arquivo: "monster_portrait_square_b_epic.avif", categoria: "Epic" },
+            { nome: "Epic Tweedle", arquivo: "monster_portrait_square_a_epic.avif", categoria: "Epic" },
+            { nome: "Epic Maw", arquivo: "monster_portrait_square_de_epic.avif", categoria: "Epic" },
+            { nome: "Epic Furcorn", arquivo: "monster_portrait_square_be_epic.avif", categoria: "Epic" },
+            { nome: "Epic Oaktopus", arquivo: "monster_portrait_square_bd_epic.avif", categoria: "Epic" },
+            { nome: "Epic Dandidoo", arquivo: "monster_portrait_square_ab_epic.avif", categoria: "Epic" },
+            { nome: "Epic Pango", arquivo: "monster_portrait_square_ae_epic.avif", categoria: "Epic" },
+            { nome: "Epic Quibble", arquivo: "monster_portrait_square_ad_epic.avif", categoria: "Epic" },
+            { nome: "Epic Bowgart", arquivo: "monster_portrait_square_bde_epic.avif", categoria: "Epic" },
+            { nome: "Epic Spunge", arquivo: "monster_portrait_square_abd_epic.avif", categoria: "Epic" },
+            { nome: "Epic Thumpies", arquivo: "monster_portrait_square_abe_epic.avif", categoria: "Epic" },
+            { nome: "Epic Congle", arquivo: "monster_portrait_square_ade_epic.avif", categoria: "Epic" },
+            { nome: "Epic Deedge", arquivo: "monster_portrait_square_abde_epic.avif", categoria: "Epic" },
+            { nome: "Epic Wubbox", arquivo: "https://raw.githubusercontent.com/Repos999/Memory/refs/heads/main/monster_portrait_square_f_epic_cold.avif", categoria: "Epic" },
+            { nome: "Epic Grumpyre", arquivo: "monster_portrait_square_j_epic.avif", categoria: "Epic" },
+            { nome: "Epic Yool", arquivo: "monster_portrait_square_s02_epic.avif", categoria: "Epic" },
+            { nome: "Epic Strombonin", arquivo: "monster_portrait_square_p03_epic.avif", categoria: "Epic" },
+
+            // SPECIALS
+            { nome: "bbli$zard", arquivo: "monster_portrait_square_z09.avif", categoria: "Specials" },
+            { nome: "Tawkerr", arquivo: "monster_portrait_square_VOC_01.avif", categoria: "Specials" },
+            { nome: "Maggpi", arquivo: "monster_portrait_square_VOC_04.avif", categoria: "Specials" }
+        ];
+
+        let quadradoAtual = null;
+
+        // --- NAVIGATION LOGIC ---
+        function selecionarIlha(ilha) {
+            ilhaAtual = ilha;
+            
+            if (ilha === 'plant') {
+                itensDataRender = itensRecursos.concat(monstrosPlant, itensDipsters);
+                document.getElementById('tituloPrincipal').innerText = "MSM Memory Game - Plant Island";
+            } else {
+                itensDataRender = itensRecursos.concat(monstrosCold, itensDipsters);
+                document.getElementById('tituloPrincipal').innerText = "MSM Memory Game - Cold Island";
+            }
+
+            document.getElementById('telaMenuIlha').style.display = 'none';
+            document.getElementById('telaMenuNivel').style.display = 'flex';
+        }
+
+        function voltarParaIlhas() {
+            document.getElementById('telaJogo').style.display = 'none';
+            document.getElementById('telaMenuNivel').style.display = 'none';
+            document.getElementById('telaMenuIlha').style.display = 'flex';
+            document.getElementById('tituloPrincipal').innerText = "MSM Memory Game";
+        }
+
+        function sairDoJogo() {
+            if (confirm("Are you sure you want to leave? Your board will be reset.")) {
+                voltarParaIlhas();
+            }
+        }
+
+        function iniciarNivel(idNivel) {
+            document.getElementById('telaMenuNivel').style.display = 'none';
+            document.getElementById('telaJogo').style.display = 'flex';
+
+            const layoutMatriz = layouts[idNivel];
+            const colunas = layoutMatriz[0].length; 
+            const tabuleiro = document.getElementById("tabuleiro");
+            
+            tabuleiro.style.gridTemplateColumns = `repeat(${colunas}, 1fr)`;
+            tabuleiro.innerHTML = ""; 
+
+            layoutMatriz.forEach(linha => {
+                linha.forEach(celula => {
+                    let div = document.createElement("div");
+                    
+                    if (celula === 1) {
+                        div.className = "quadrado ativo";
+                        div.innerHTML = `<img src="${imagemFundo}" alt="Card Back">`;
+                        div.onclick = () => abrirModal(div);
+                    } else {
+                        div.className = "quadrado vazio"; 
+                    }
+                    
+                    tabuleiro.appendChild(div);
+                });
+            });
+        }
+
+        // --- MODAL & LIST LOGIC ---
+        function renderizarLista(filtro = "") {
+            const listaContainer = document.getElementById("listaOpcoes");
+            listaContainer.innerHTML = ""; 
+
+            let categoriaAtualRenderizada = ""; 
+
+            itensDataRender.forEach(item => {
+                if (item.nome.toLowerCase().includes(filtro.toLowerCase())) {
+                    
+                    if (item.categoria !== categoriaAtualRenderizada) {
+                        categoriaAtualRenderizada = item.categoria;
+                        if (categoriaAtualRenderizada !== "Resources") {
+                            let tituloCat = document.createElement("div");
+                            tituloCat.className = "categoria-titulo";
+                            tituloCat.innerText = categoriaAtualRenderizada;
+                            listaContainer.appendChild(tituloCat);
+                        }
+                    }
+
+                    let div = document.createElement("div");
+                    div.className = "item-lista";
+                    div.onclick = () => confirmarMonstro(item);
+                    
+                    let conteudoHTML = "";
+                    if (item.arquivo === "") {
+                        conteudoHTML = `<div style="width:45px; height:45px; margin-right:15px; font-size:30px; text-align:center;">🧹</div> <span>${item.nome}</span>`;
+                    } else {
+                        let linkImagem = item.arquivo.startsWith("http") ? item.arquivo : urlBase + item.arquivo;
+                        conteudoHTML = `<img src="${linkImagem}" alt="${item.nome}"> <span>${item.nome}</span>`;
+                    }
+
+                    div.innerHTML = conteudoHTML;
+                    listaContainer.appendChild(div);
+                }
+            });
+        }
+
+        function abrirModal(elemento) {
+            quadradoAtual = elemento;
+            document.getElementById("modalMonstros").style.display = "flex";
+            document.getElementById("buscaMonstro").value = "";
+            renderizarLista();
+        }
+
+        function fecharModal() {
+            document.getElementById("modalMonstros").style.display = "none";
+            quadradoAtual = null;
+        }
+
+        function filtrarLista() {
+            const textoBusca = document.getElementById("buscaMonstro").value;
+            renderizarLista(textoBusca);
+        }
+
+        function confirmarMonstro(item) {
+            if (quadradoAtual) {
+                if (item.arquivo === "") {
+                    quadradoAtual.innerHTML = `<img src="${imagemFundo}" alt="Card Back">`;
+                } else {
+                    let linkImagem = item.arquivo.startsWith("http") ? item.arquivo : urlBase + item.arquivo;
+                    quadradoAtual.innerHTML = `<img src="${linkImagem}" alt="${item.nome}">`;
+                }
+            }
+            fecharModal();
+        }
+
+        function limparTabuleiro() {
+            if(confirm("Do you want to clear all selections and flip the cards face down?")) {
+                let quadrados = document.querySelectorAll(".quadrado.ativo");
+                quadrados.forEach(q => {
+                    q.innerHTML = `<img src="${imagemFundo}" alt="Card Back">`;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
