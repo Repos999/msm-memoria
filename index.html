@@ -1,1 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auxiliar de Memória MSM</title>
+    <style>
+        body {
+            background-color: #2b1d3d; /* Cor de fundo escura parecida com o jogo */
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
 
+        h2 { text-shadow: 2px 2px 4px #000; }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(7, 70px); /* 7 colunas */
+            grid-template-rows: repeat(5, 70px);    /* 5 linhas */
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .quadrado {
+            background-color: #794a8d; /* Roxo parecido com as pedras do jogo */
+            border: 2px solid #4a295c;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            transition: transform 0.1s, background-color 0.2s;
+            overflow: hidden;
+            word-wrap: break-word;
+            padding: 2px;
+        }
+
+        .quadrado:hover { transform: scale(1.05); }
+        .quadrado.vazio { background-color: #3b284f; border-color: #2b1d3d; }
+
+        /* Estilos da Janela (Modal) */
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 1;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-conteudo {
+            background-color: #4a295c;
+            padding: 20px;
+            border-radius: 15px;
+            border: 3px solid #794a8d;
+            text-align: center;
+            width: 300px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-confirmar { background-color: #4CAF50; color: white; }
+        .btn-cancelar { background-color: #f44336; color: white; }
+        .btn-limpar { background-color: #ff9800; color: white; margin-bottom: 20px;}
+    </style>
+</head>
+<body>
+
+    <h2>Anotações - Jogo da Memória MSM</h2>
+    <button class="btn-limpar" onclick="limparTabuleiro()">Limpar Todo o Tabuleiro</button>
+    
+    <div class="grid-container" id="tabuleiro"></div>
+
+    <!-- Janela de Seleção de Monstro -->
+    <div id="modalMonstros" class="modal">
+        <div class="modal-conteudo">
+            <h3>Qual monstro está aqui?</h3>
+            <select id="listaMonstros">
+                <!-- A lista será preenchida pelo JavaScript -->
+            </select>
+            <br>
+            <button class="btn-confirmar" onclick="confirmarMonstro()">Confirmar</button>
+            <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        // Lista básica de monstros (você pode adicionar mais aqui depois!)
+        const monstros = [
+            "❓ Desconhecido (Vazio)", 
+            "⬛ Espaço Inexistente",
+            "Cabeça-Dura", "Mamutinho", "Dedo-Enroscado", "Planta-Pança", "Pintinho Piu",
+            "Sabugo Peludo", "Carvalho-Polvo", "Sapo-Cururu", "Baquetador",
+            "Pompom", "Bocarra", "T-Rox", "Maraca", "Dom Sapo",
+            "Molequ-Ent", "Brat-Brat", "Fantominho", "Açúcar-Bush"
+        ];
+
+        let quadradoAtual = null;
+
+        // 1. Preencher a lista do Modal
+        const selectElement = document.getElementById("listaMonstros");
+        monstros.forEach(monstro => {
+            let option = document.createElement("option");
+            option.value = monstro;
+            option.text = monstro;
+            selectElement.appendChild(option);
+        });
+
+        // 2. Criar os 35 quadrados do tabuleiro (5 linhas x 7 colunas)
+        const tabuleiro = document.getElementById("tabuleiro");
+        for (let i = 0; i < 35; i++) {
+            let div = document.createElement("div");
+            div.className = "quadrado";
+            div.onclick = () => abrirModal(div);
+            tabuleiro.appendChild(div);
+        }
+
+        // 3. Funções do Modal
+        function abrirModal(elementoQuadrado) {
+            quadradoAtual = elementoQuadrado;
+            document.getElementById("modalMonstros").style.display = "flex";
+            
+            // Se o quadrado já tem um nome, seleciona ele na lista
+            let nomeAtual = quadradoAtual.innerText;
+            if (nomeAtual) {
+                selectElement.value = nomeAtual;
+            } else {
+                selectElement.value = monstros[0];
+            }
+        }
+
+        function fecharModal() {
+            document.getElementById("modalMonstros").style.display = "none";
+            quadradoAtual = null;
+        }
+
+        function confirmarMonstro() {
+            if (quadradoAtual) {
+                let escolha = selectElement.value;
+                if (escolha === "❓ Desconhecido (Vazio)") {
+                    quadradoAtual.innerText = "";
+                    quadradoAtual.classList.remove("vazio");
+                } else if (escolha === "⬛ Espaço Inexistente") {
+                    quadradoAtual.innerText = "";
+                    quadradoAtual.classList.add("vazio");
+                } else {
+                    quadradoAtual.innerText = escolha;
+                    quadradoAtual.classList.remove("vazio");
+                }
+            }
+            fecharModal();
+        }
+
+        function limparTabuleiro() {
+            if(confirm("Tem certeza que deseja apagar todas as marcações?")) {
+                let quadrados = document.querySelectorAll(".quadrado");
+                quadrados.forEach(q => {
+                    q.innerText = "";
+                    q.classList.remove("vazio");
+                });
+            }
+        }
+    </script>
+</body>
+</html>
