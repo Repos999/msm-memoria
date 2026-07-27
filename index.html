@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memória MSM - Ilha de Planta</title>
+    <title>Memória MSM</title>
     <style>
         body {
-            background-color: #2b1d3d;
+            background-color: #2b1d3d; /* Cor de fundo escuro do jogo */
             color: white;
             font-family: Arial, sans-serif;
             display: flex;
@@ -16,49 +16,117 @@
             padding-top: 10px;
         }
 
-        h2 { text-shadow: 2px 2px 4px #000; text-align: center; margin: 10px 0; font-size: 22px; }
-
-        .btn-limpar { 
-            background-color: #ff9800; color: white; margin-bottom: 15px;
-            padding: 10px 15px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;
+        h2 { 
+            text-shadow: 2px 2px 4px #000; 
+            text-align: center; 
+            margin: 10px 0; 
+            font-size: 24px; 
         }
 
-        /* Tabuleiro responsivo */
+        /* -------------------------------------- */
+        /* TELA DE MENU (Escolha de Níveis)      */
+        /* -------------------------------------- */
+        #telaMenu {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            max-width: 400px;
+            margin-top: 50px;
+        }
+
+        .btn-nivel {
+            background-color: #794a8d;
+            border: 3px solid #4a295c;
+            color: white;
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        .btn-nivel:hover, .btn-nivel:active {
+            transform: scale(1.05);
+            background-color: #925ba8;
+        }
+
+        /* -------------------------------------- */
+        /* TELA DO JOGO (Tabuleiro)              */
+        /* -------------------------------------- */
+        #telaJogo {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .controles-topo {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn-topo { 
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 5px; 
+            font-weight: bold; 
+            cursor: pointer;
+        }
+
+        .btn-voltar { background-color: #4CAF50; color: white; }
+        .btn-limpar { background-color: #ff9800; color: white; }
+
+        /* O Tabuleiro agora se adapta à quantidade de colunas do nível */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-            width: 95vw;
-            max-width: 450px;
+            gap: 2px;
+            width: 98vw;
+            max-width: 500px;
+            justify-content: center;
         }
 
+        /* O Quadrado agora é 100% transparente, sem bordas! */
         .quadrado {
-            background-color: #794a8d;
-            border: 2px solid #4a295c;
-            border-radius: 6px;
-            cursor: pointer;
+            background-color: transparent;
+            border: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
             aspect-ratio: 1 / 1; 
-            overflow: hidden; /* Garante que o zoom da imagem não saia das bordas */
         }
 
-        .quadrado img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scale(1.15); /* DÁ UM ZOOM DE 15% NA IMAGEM PARA TAMPAR O QUADRADO */
+        .quadrado.ativo {
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .quadrado.ativo:active img {
+            transform: scale(0.9); /* Dá um efeitinho ao clicar */
+        }
+
+        /* Os quadrados vazios invisíveis para criar o formato do tabuleiro */
+        .quadrado.vazio {
             pointer-events: none;
         }
 
-        /* Efeito de clique no quadrado do tabuleiro */
-        .quadrado:active img {
-            transform: scale(1.05); /* Pequeno efeito visual ao tocar na carta */
+        /* A imagem agora é a única coisa visível */
+        .quadrado img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.6)); /* Sombra direta na imagem */
         }
 
-        /* Janela Modal */
+        /* -------------------------------------- */
+        /* JANELA MODAL (Lista de Monstros)      */
+        /* -------------------------------------- */
         .modal {
             display: none; 
             position: fixed;
@@ -88,6 +156,7 @@
             border: none;
             margin-bottom: 10px;
             font-size: 16px;
+            background-color: #e0d4e8;
         }
 
         .lista-monstros {
@@ -115,7 +184,6 @@
             object-fit: contain;
             margin-right: 15px;
             border-radius: 5px;
-            background-color: #2b1d3d; 
         }
 
         .item-lista span { font-weight: bold; font-size: 14px; }
@@ -130,14 +198,30 @@
 <body>
 
     <h2>Memória MSM</h2>
-    <button class="btn-limpar" onclick="limparTabuleiro()">🧹 Limpar Tabuleiro</button>
-    
-    <div class="grid-container" id="tabuleiro"></div>
 
+    <!-- TELA 1: MENU DE SELEÇÃO -->
+    <div id="telaMenu">
+        <h3>Qual o formato da fase?</h3>
+        <button class="btn-nivel" onclick="iniciarNivel('nivel8')">Nível 8 (Grade 5x6)</button>
+        <button class="btn-nivel" onclick="iniciarNivel('nivel9v1')">Nível 9 V1 (Formato Balão)</button>
+        <button class="btn-nivel" onclick="iniciarNivel('nivel9v2')">Nível 9 V2 (Com Diagonais)</button>
+    </div>
+    
+    <!-- TELA 2: TABULEIRO DO JOGO -->
+    <div id="telaJogo">
+        <div class="controles-topo">
+            <button class="btn-topo btn-voltar" onclick="voltarMenu()">🔙 Mudar Nível</button>
+            <button class="btn-topo btn-limpar" onclick="limparTabuleiro()">🧹 Limpar Tabuleiro</button>
+        </div>
+        
+        <div class="grid-container" id="tabuleiro"></div>
+    </div>
+
+    <!-- JANELA MODAL DE SELEÇÃO DE MONSTROS -->
     <div id="modalMonstros" class="modal">
         <div class="modal-conteudo">
             <h3>Escolha a Imagem:</h3>
-            <input type="text" id="buscaMonstro" placeholder="Pesquisar monstro/item..." onkeyup="filtrarLista()">
+            <input type="text" id="buscaMonstro" placeholder="Pesquisar..." onkeyup="filtrarLista()">
             
             <div id="listaOpcoes" class="lista-monstros"></div>
             
@@ -147,9 +231,36 @@
 
     <script>
         const urlBase = "https://raw.githubusercontent.com/Repos999/Memory/refs/heads/main/";
-        
-        // Define a imagem da "carta virada para trás"
         const imagemFundo = urlBase + "monster_portrait_random.avif";
+
+        // Mapeamento EXATO dos desenhos das fases (1 = Carta visível, 0 = Espaço Vazio Transparente)
+        const layouts = {
+            // Nível 8 Padrão: Grade 6 colunas x 5 linhas
+            nivel8: [
+                [1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1]
+            ],
+            // Nível 9 V1 (Copiado da sua Imagem 1 - 9 colunas)
+            nivel9v1: [
+                [0, 1, 1, 1, 1, 1, 1, 1, 0],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [0, 1, 1, 1, 1, 1, 1, 1, 0],
+                [0, 0, 1, 1, 1, 1, 1, 0, 0],
+                [0, 0, 0, 1, 1, 1, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0, 0]
+            ],
+            // Nível 9 V2 (Copiado da sua Imagem 2 - 8 colunas com os buracos na diagonal)
+            nivel9v2: [
+                [1, 1, 1, 1, 0, 1, 1, 0],
+                [1, 1, 1, 0, 1, 1, 0, 1],
+                [1, 1, 0, 1, 1, 0, 1, 1],
+                [1, 0, 1, 1, 0, 1, 1, 1],
+                [0, 1, 1, 0, 1, 1, 1, 1]
+            ]
+        };
 
         const itensData = [
             { nome: "🧹 Restaurar Quadrado (Limpar)", arquivo: "" },
@@ -234,16 +345,46 @@
 
         let quadradoAtual = null;
 
-        const tabuleiro = document.getElementById("tabuleiro");
-        for (let i = 0; i < 35; i++) {
-            let div = document.createElement("div");
-            div.className = "quadrado";
-            // Já injeta a imagem virada para trás na criação
-            div.innerHTML = `<img src="${imagemFundo}" alt="Virado">`;
-            div.onclick = () => abrirModal(div);
-            tabuleiro.appendChild(div);
+        // Função para desenhar a fase escolhida no tabuleiro
+        function iniciarNivel(idNivel) {
+            document.getElementById('telaMenu').style.display = 'none';
+            document.getElementById('telaJogo').style.display = 'flex';
+
+            const layoutMatriz = layouts[idNivel];
+            const colunas = layoutMatriz[0].length; // Conta quantas colunas a matriz tem
+            const tabuleiro = document.getElementById("tabuleiro");
+            
+            // Ajusta o CSS Grid para o número exato de colunas do nível
+            tabuleiro.style.gridTemplateColumns = `repeat(${colunas}, 1fr)`;
+            tabuleiro.innerHTML = ""; // Limpa qualquer nível anterior
+
+            // Constrói os quadradinhos iterando sobre a matriz
+            layoutMatriz.forEach(linha => {
+                linha.forEach(celula => {
+                    let div = document.createElement("div");
+                    
+                    if (celula === 1) {
+                        // É uma carta do jogo
+                        div.className = "quadrado ativo";
+                        div.innerHTML = `<img src="${imagemFundo}" alt="Virado">`;
+                        div.onclick = () => abrirModal(div);
+                    } else {
+                        // É um buraco/vazio no formato
+                        div.className = "quadrado vazio"; 
+                    }
+                    
+                    tabuleiro.appendChild(div);
+                });
+            });
         }
 
+        // Função para voltar à tela inicial
+        function voltarMenu() {
+            document.getElementById('telaMenu').style.display = 'flex';
+            document.getElementById('telaJogo').style.display = 'none';
+        }
+
+        // --- SISTEMA DA JANELA (Mantido idêntico) ---
         function renderizarLista(filtro = "") {
             const listaContainer = document.getElementById("listaOpcoes");
             listaContainer.innerHTML = ""; 
@@ -259,8 +400,7 @@
                         conteudoHTML = `<div style="width:45px; height:45px; margin-right:15px; font-size:30px; text-align:center;">🧹</div> <span>${item.nome}</span>`;
                     } else {
                         let linkImagem = urlBase + item.arquivo;
-                        // Na lista da janela, o zoom é desativado para a miniatura ficar inteira
-                        conteudoHTML = `<img src="${linkImagem}" alt="${item.nome}" style="transform: scale(1);"> <span>${item.nome}</span>`;
+                        conteudoHTML = `<img src="${linkImagem}" alt="${item.nome}"> <span>${item.nome}</span>`;
                     }
 
                     div.innerHTML = conteudoHTML;
@@ -289,7 +429,7 @@
         function confirmarMonstro(item) {
             if (quadradoAtual) {
                 if (item.arquivo === "") {
-                    // Ao invés de ficar vazio, ele restaura a imagem do quadradinho roxo
+                    // Volta a exibir a cartinha virada
                     quadradoAtual.innerHTML = `<img src="${imagemFundo}" alt="Virado">`;
                 } else {
                     let linkImagem = urlBase + item.arquivo;
@@ -301,9 +441,9 @@
 
         function limparTabuleiro() {
             if(confirm("Deseja apagar todas as marcações e virar as cartas para baixo?")) {
-                let quadrados = document.querySelectorAll(".quadrado");
+                // Limpa apenas os quadrados que fazem parte do jogo (ignora os vazios)
+                let quadrados = document.querySelectorAll(".quadrado.ativo");
                 quadrados.forEach(q => {
-                    // Restaura todas as cartas para a imagem do quadradinho roxo
                     q.innerHTML = `<img src="${imagemFundo}" alt="Virado">`;
                 });
             }
