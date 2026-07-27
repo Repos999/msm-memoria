@@ -23,7 +23,7 @@
             padding: 10px 15px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;
         }
 
-        /* Tabuleiro responsivo (ajusta ao tamanho da tela) */
+        /* Tabuleiro responsivo */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -41,15 +41,21 @@
             align-items: center;
             justify-content: center;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-            aspect-ratio: 1 / 1; /* Mantém sempre um quadrado perfeito */
-            overflow: hidden;
+            aspect-ratio: 1 / 1; 
+            overflow: hidden; /* Garante que o zoom da imagem não saia das bordas */
         }
 
         .quadrado img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transform: scale(1.15); /* DÁ UM ZOOM DE 15% NA IMAGEM PARA TAMPAR O QUADRADO */
             pointer-events: none;
+        }
+
+        /* Efeito de clique no quadrado do tabuleiro */
+        .quadrado:active img {
+            transform: scale(1.05); /* Pequeno efeito visual ao tocar na carta */
         }
 
         /* Janela Modal */
@@ -109,7 +115,7 @@
             object-fit: contain;
             margin-right: 15px;
             border-radius: 5px;
-            background-color: #2b1d3d; /* Fundo escuro para a imagem caso tenha transparência */
+            background-color: #2b1d3d; 
         }
 
         .item-lista span { font-weight: bold; font-size: 14px; }
@@ -128,31 +134,27 @@
     
     <div class="grid-container" id="tabuleiro"></div>
 
-    <!-- Janela de Seleção -->
     <div id="modalMonstros" class="modal">
         <div class="modal-conteudo">
             <h3>Escolha a Imagem:</h3>
             <input type="text" id="buscaMonstro" placeholder="Pesquisar monstro/item..." onkeyup="filtrarLista()">
             
-            <div id="listaOpcoes" class="lista-monstros">
-                <!-- Lista gerada pelo JavaScript -->
-            </div>
+            <div id="listaOpcoes" class="lista-monstros"></div>
             
             <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
         </div>
     </div>
 
     <script>
-        // A base da URL do seu repositório de imagens
         const urlBase = "https://raw.githubusercontent.com/Repos999/Memory/refs/heads/main/";
+        
+        // Define a imagem da "carta virada para trás"
+        const imagemFundo = urlBase + "monster_portrait_random.avif";
 
         const itensData = [
-            // Controle
             { nome: "🧹 Restaurar Quadrado (Limpar)", arquivo: "" },
             { nome: "🟣 Quadradinho Roxo", arquivo: "monster_portrait_random.avif" },
             { nome: "⬛ Caricatura Vazia", arquivo: "monster_portrait_blank.avif" },
-
-            // Itens Especiais
             { nome: "Moeda (Coin)", arquivo: "coin.avif" },
             { nome: "Comida (Treats)", arquivo: "food.avif" },
             { nome: "Fragmentos (Shards)", arquivo: "shard.avif" },
@@ -161,8 +163,6 @@
             { nome: "Chaves (Keys)", arquivo: "keys.avif" },
             { nome: "Relíquias (Relics)", arquivo: "relic.avif" },
             { nome: "XP", arquivo: "xp.avif" },
-
-            // Comuns
             { nome: "Potbelly", arquivo: "monster_portrait_square_b.avif" },
             { nome: "Noggin", arquivo: "monster_portrait_square_c.avif" },
             { nome: "Toe Jammer", arquivo: "monster_portrait_square_d.avif" },
@@ -192,8 +192,6 @@
             { nome: "Bowgart", arquivo: "monster_portrait_square_bde.avif" },
             { nome: "T-Rox", arquivo: "monster_portrait_square_cde.avif" },
             { nome: "Entbrat", arquivo: "monster_portrait_square_bcde.avif" },
-
-            // Raros
             { nome: "Potbelly Raro", arquivo: "monster_portrait_square_b_rare.avif" },
             { nome: "Noggin Raro", arquivo: "monster_portrait_square_c_rare.avif" },
             { nome: "Toe Jammer Raro", arquivo: "monster_portrait_square_d_rare.avif" },
@@ -213,8 +211,6 @@
             { nome: "Bowgart Raro", arquivo: "monster_portrait_square_bde_rare.avif" },
             { nome: "T-Rox Raro", arquivo: "monster_portrait_square_cde_rare.avif" },
             { nome: "Entbrat Raro", arquivo: "monster_portrait_square_bcde_rare.avif" },
-
-            // Épicos
             { nome: "Potbelly Épico", arquivo: "monster_portrait_square_b_epic.avif" },
             { nome: "Noggin Épico", arquivo: "monster_portrait_square_c_epic.avif" },
             { nome: "Toe Jammer Épico", arquivo: "monster_portrait_square_d_epic.avif" },
@@ -238,22 +234,21 @@
 
         let quadradoAtual = null;
 
-        // Cria os 35 quadrados do tabuleiro
         const tabuleiro = document.getElementById("tabuleiro");
         for (let i = 0; i < 35; i++) {
             let div = document.createElement("div");
             div.className = "quadrado";
+            // Já injeta a imagem virada para trás na criação
+            div.innerHTML = `<img src="${imagemFundo}" alt="Virado">`;
             div.onclick = () => abrirModal(div);
             tabuleiro.appendChild(div);
         }
 
-        // Função que desenha a lista dentro da janela
         function renderizarLista(filtro = "") {
             const listaContainer = document.getElementById("listaOpcoes");
-            listaContainer.innerHTML = ""; // Limpa a lista atual
+            listaContainer.innerHTML = ""; 
 
             itensData.forEach(item => {
-                // Checa se o nome inclui o que foi digitado (ignorando maiúsculas/minúsculas)
                 if (item.nome.toLowerCase().includes(filtro.toLowerCase())) {
                     let div = document.createElement("div");
                     div.className = "item-lista";
@@ -263,9 +258,9 @@
                     if (item.arquivo === "") {
                         conteudoHTML = `<div style="width:45px; height:45px; margin-right:15px; font-size:30px; text-align:center;">🧹</div> <span>${item.nome}</span>`;
                     } else {
-                        // Junta o link do GitHub com o nome do arquivo
                         let linkImagem = urlBase + item.arquivo;
-                        conteudoHTML = `<img src="${linkImagem}" alt="${item.nome}"> <span>${item.nome}</span>`;
+                        // Na lista da janela, o zoom é desativado para a miniatura ficar inteira
+                        conteudoHTML = `<img src="${linkImagem}" alt="${item.nome}" style="transform: scale(1);"> <span>${item.nome}</span>`;
                     }
 
                     div.innerHTML = conteudoHTML;
@@ -277,8 +272,8 @@
         function abrirModal(elemento) {
             quadradoAtual = elemento;
             document.getElementById("modalMonstros").style.display = "flex";
-            document.getElementById("buscaMonstro").value = ""; // Limpa a busca ao abrir
-            renderizarLista(); // Mostra tudo
+            document.getElementById("buscaMonstro").value = "";
+            renderizarLista();
         }
 
         function fecharModal() {
@@ -294,7 +289,8 @@
         function confirmarMonstro(item) {
             if (quadradoAtual) {
                 if (item.arquivo === "") {
-                    quadradoAtual.innerHTML = ""; // Limpa o quadrado, volta a ser roxo puro
+                    // Ao invés de ficar vazio, ele restaura a imagem do quadradinho roxo
+                    quadradoAtual.innerHTML = `<img src="${imagemFundo}" alt="Virado">`;
                 } else {
                     let linkImagem = urlBase + item.arquivo;
                     quadradoAtual.innerHTML = `<img src="${linkImagem}" alt="${item.nome}">`;
@@ -304,9 +300,12 @@
         }
 
         function limparTabuleiro() {
-            if(confirm("Deseja apagar todas as imagens do tabuleiro?")) {
+            if(confirm("Deseja apagar todas as marcações e virar as cartas para baixo?")) {
                 let quadrados = document.querySelectorAll(".quadrado");
-                quadrados.forEach(q => q.innerHTML = "");
+                quadrados.forEach(q => {
+                    // Restaura todas as cartas para a imagem do quadradinho roxo
+                    q.innerHTML = `<img src="${imagemFundo}" alt="Virado">`;
+                });
             }
         }
     </script>
