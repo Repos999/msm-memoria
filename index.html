@@ -3,136 +3,242 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auxiliar de Memória MSM</title>
+    <title>Memória MSM - Ilha de Planta</title>
     <style>
         body {
-            background-color: #2b1d3d; /* Cor de fundo escura parecida com o jogo */
+            background-color: #2b1d3d;
             color: white;
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-top: 20px;
+            margin: 0;
+            padding-top: 10px;
         }
 
-        h2 { text-shadow: 2px 2px 4px #000; }
+        h2 { text-shadow: 2px 2px 4px #000; text-align: center; margin: 10px 0; font-size: 22px; }
 
+        .btn-limpar { 
+            background-color: #ff9800; color: white; margin-bottom: 15px;
+            padding: 10px 15px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;
+        }
+
+        /* Tabuleiro responsivo (ajusta ao tamanho da tela) */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(7, 70px); /* 7 colunas */
-            grid-template-rows: repeat(5, 70px);    /* 5 linhas */
-            gap: 10px;
-            margin-top: 20px;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            width: 95vw;
+            max-width: 450px;
         }
 
         .quadrado {
-            background-color: #794a8d; /* Roxo parecido com as pedras do jogo */
+            background-color: #794a8d;
             border: 2px solid #4a295c;
-            border-radius: 10px;
+            border-radius: 6px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center;
-            font-size: 11px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 1px 1px 2px #000;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-            transition: transform 0.1s, background-color 0.2s;
+            aspect-ratio: 1 / 1; /* Mantém sempre um quadrado perfeito */
             overflow: hidden;
-            word-wrap: break-word;
-            padding: 2px;
         }
 
-        .quadrado:hover { transform: scale(1.05); }
-        .quadrado.vazio { background-color: #3b284f; border-color: #2b1d3d; }
+        .quadrado img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
 
-        /* Estilos da Janela (Modal) */
+        /* Janela Modal */
         .modal {
             display: none; 
             position: fixed;
-            z-index: 1;
+            z-index: 10;
             left: 0; top: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.7);
+            background-color: rgba(0,0,0,0.85);
             justify-content: center;
             align-items: center;
         }
 
         .modal-conteudo {
             background-color: #4a295c;
-            padding: 20px;
-            border-radius: 15px;
-            border: 3px solid #794a8d;
-            text-align: center;
-            width: 300px;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #794a8d;
+            width: 90%;
+            max-width: 350px;
+            display: flex;
+            flex-direction: column;
         }
 
-        select {
-            width: 100%;
+        .modal-conteudo h3 { margin-top: 0; text-align: center; font-size: 18px; }
+
+        #buscaMonstro {
             padding: 10px;
-            margin: 15px 0;
             border-radius: 5px;
+            border: none;
+            margin-bottom: 10px;
             font-size: 16px;
         }
 
-        button {
-            padding: 10px 15px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
+        .lista-monstros {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding-right: 5px;
         }
 
-        .btn-confirmar { background-color: #4CAF50; color: white; }
-        .btn-cancelar { background-color: #f44336; color: white; }
-        .btn-limpar { background-color: #ff9800; color: white; margin-bottom: 20px;}
+        .item-lista {
+            display: flex;
+            align-items: center;
+            background-color: #3b284f;
+            border: 1px solid #2b1d3d;
+            border-radius: 8px;
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        .item-lista img {
+            width: 45px;
+            height: 45px;
+            object-fit: contain;
+            margin-right: 15px;
+            border-radius: 5px;
+            background-color: #2b1d3d; /* Fundo escuro para a imagem caso tenha transparência */
+        }
+
+        .item-lista span { font-weight: bold; font-size: 14px; }
+        .item-lista:active { background-color: #4CAF50; }
+
+        .btn-cancelar { 
+            background-color: #f44336; color: white; width: 100%; 
+            padding: 12px; border: none; border-radius: 5px; font-weight: bold; margin-top: 10px; cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-    <h2>Anotações - Jogo da Memória MSM</h2>
-    <button class="btn-limpar" onclick="limparTabuleiro()">Limpar Todo o Tabuleiro</button>
+    <h2>Memória MSM</h2>
+    <button class="btn-limpar" onclick="limparTabuleiro()">🧹 Limpar Tabuleiro</button>
     
     <div class="grid-container" id="tabuleiro"></div>
 
-    <!-- Janela de Seleção de Monstro -->
+    <!-- Janela de Seleção -->
     <div id="modalMonstros" class="modal">
         <div class="modal-conteudo">
-            <h3>Qual monstro está aqui?</h3>
-            <select id="listaMonstros">
-                <!-- A lista será preenchida pelo JavaScript -->
-            </select>
-            <br>
-            <button class="btn-confirmar" onclick="confirmarMonstro()">Confirmar</button>
+            <h3>Escolha a Imagem:</h3>
+            <input type="text" id="buscaMonstro" placeholder="Pesquisar monstro/item..." onkeyup="filtrarLista()">
+            
+            <div id="listaOpcoes" class="lista-monstros">
+                <!-- Lista gerada pelo JavaScript -->
+            </div>
+            
             <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
         </div>
     </div>
 
     <script>
-        // Lista básica de monstros (você pode adicionar mais aqui depois!)
-        const monstros = [
-            "❓ Desconhecido (Vazio)", 
-            "⬛ Espaço Inexistente",
-            "Cabeça-Dura", "Mamutinho", "Dedo-Enroscado", "Planta-Pança", "Pintinho Piu",
-            "Sabugo Peludo", "Carvalho-Polvo", "Sapo-Cururu", "Baquetador",
-            "Pompom", "Bocarra", "T-Rox", "Maraca", "Dom Sapo",
-            "Molequ-Ent", "Brat-Brat", "Fantominho", "Açúcar-Bush"
+        // A base da URL do seu repositório de imagens
+        const urlBase = "https://raw.githubusercontent.com/Repos999/Memory/refs/heads/main/";
+
+        const itensData = [
+            // Controle
+            { nome: "🧹 Restaurar Quadrado (Limpar)", arquivo: "" },
+            { nome: "🟣 Quadradinho Roxo", arquivo: "monster_portrait_random.avif" },
+            { nome: "⬛ Caricatura Vazia", arquivo: "monster_portrait_blank.avif" },
+
+            // Itens Especiais
+            { nome: "Moeda (Coin)", arquivo: "coin.avif" },
+            { nome: "Comida (Treats)", arquivo: "food.avif" },
+            { nome: "Fragmentos (Shards)", arquivo: "shard.avif" },
+            { nome: "Diamantes (Diamonds)", arquivo: "diamond.avif" },
+            { nome: "Poder Estelar (Starpower)", arquivo: "star_power.avif" },
+            { nome: "Chaves (Keys)", arquivo: "keys.avif" },
+            { nome: "Relíquias (Relics)", arquivo: "relic.avif" },
+            { nome: "XP", arquivo: "xp.avif" },
+
+            // Comuns
+            { nome: "Potbelly", arquivo: "monster_portrait_square_b.avif" },
+            { nome: "Noggin", arquivo: "monster_portrait_square_c.avif" },
+            { nome: "Toe Jammer", arquivo: "monster_portrait_square_d.avif" },
+            { nome: "Mammott", arquivo: "monster_portrait_square_e.avif" },
+            { nome: "Wubbox", arquivo: "monster_portrait_square_f.avif" },
+            { nome: "Ghazt", arquivo: "monster_portrait_square_g.avif" },
+            { nome: "G'joob", arquivo: "monster_portrait_square_p02.avif" },
+            { nome: "Punkleton", arquivo: "monster_portrait_square_s01.avif" },
+            { nome: "Do", arquivo: "monster_portrait_square_q01.avif" },
+            { nome: "Re", arquivo: "monster_portrait_square_q02.avif" },
+            { nome: "Mi", arquivo: "monster_portrait_square_q03.avif" },
+            { nome: "Fa", arquivo: "monster_portrait_square_q04.avif" },
+            { nome: "Sol", arquivo: "monster_portrait_square_q05.avif" },
+            { nome: "La", arquivo: "monster_portrait_square_q06.avif" },
+            { nome: "Ti", arquivo: "monster_portrait_square_q07.avif" },
+            { nome: "Tawkerr", arquivo: "monster_portrait_square_VOC_01.avif" },
+            { nome: "Parlsona", arquivo: "monster_portrait_square_VOC_02.avif" },
+            { nome: "Shugabush", arquivo: "monster_portrait_square_z01.avif" },
+            { nome: "Shrubb", arquivo: "monster_portrait_square_bc.avif" },
+            { nome: "Oaktopus", arquivo: "monster_portrait_square_bd.avif" },
+            { nome: "Furcorn", arquivo: "monster_portrait_square_be.avif" },
+            { nome: "Fwog", arquivo: "monster_portrait_square_cd.avif" },
+            { nome: "Drumpler", arquivo: "monster_portrait_square_ce.avif" },
+            { nome: "Maw", arquivo: "monster_portrait_square_de.avif" },
+            { nome: "Pummel", arquivo: "monster_portrait_square_bcd.avif" },
+            { nome: "Clamble", arquivo: "monster_portrait_square_bce.avif" },
+            { nome: "Bowgart", arquivo: "monster_portrait_square_bde.avif" },
+            { nome: "T-Rox", arquivo: "monster_portrait_square_cde.avif" },
+            { nome: "Entbrat", arquivo: "monster_portrait_square_bcde.avif" },
+
+            // Raros
+            { nome: "Potbelly Raro", arquivo: "monster_portrait_square_b_rare.avif" },
+            { nome: "Noggin Raro", arquivo: "monster_portrait_square_c_rare.avif" },
+            { nome: "Toe Jammer Raro", arquivo: "monster_portrait_square_d_rare.avif" },
+            { nome: "Mammott Raro", arquivo: "monster_portrait_square_e_rare.avif" },
+            { nome: "Wubbox Raro", arquivo: "monster_portrait_square_f_rare.avif" },
+            { nome: "Ghazt Raro", arquivo: "monster_portrait_square_g_rare.avif" },
+            { nome: "G'joob Raro", arquivo: "monster_portrait_square_p02_rare.avif" },
+            { nome: "Punkleton Raro", arquivo: "monster_portrait_square_s01_rare.avif" },
+            { nome: "Shrubb Raro", arquivo: "monster_portrait_square_bc_rare.avif" },
+            { nome: "Oaktopus Raro", arquivo: "monster_portrait_square_bd_rare.avif" },
+            { nome: "Furcorn Raro", arquivo: "monster_portrait_square_be_rare.avif" },
+            { nome: "Fwog Raro", arquivo: "monster_portrait_square_cd_rare.avif" },
+            { nome: "Drumpler Raro", arquivo: "monster_portrait_square_ce_rare.avif" },
+            { nome: "Maw Raro", arquivo: "monster_portrait_square_de_rare.avif" },
+            { nome: "Pummel Raro", arquivo: "monster_portrait_square_bcd_rare.avif" },
+            { nome: "Clamble Raro", arquivo: "monster_portrait_square_bce_rare.avif" },
+            { nome: "Bowgart Raro", arquivo: "monster_portrait_square_bde_rare.avif" },
+            { nome: "T-Rox Raro", arquivo: "monster_portrait_square_cde_rare.avif" },
+            { nome: "Entbrat Raro", arquivo: "monster_portrait_square_bcde_rare.avif" },
+
+            // Épicos
+            { nome: "Potbelly Épico", arquivo: "monster_portrait_square_b_epic.avif" },
+            { nome: "Noggin Épico", arquivo: "monster_portrait_square_c_epic.avif" },
+            { nome: "Toe Jammer Épico", arquivo: "monster_portrait_square_d_epic.avif" },
+            { nome: "Mammott Épico", arquivo: "monster_portrait_square_e_epic.avif" },
+            { nome: "Wubbox Épico", arquivo: "monster_portrait_square_f_epic.avif" },
+            { nome: "Ghazt Épico", arquivo: "monster_portrait_square_g_epic.avif" },
+            { nome: "G'joob Épico", arquivo: "monster_portrait_square_p02_epic.avif" },
+            { nome: "Punkleton Épico", arquivo: "monster_portrait_square_s01_epic.avif" },
+            { nome: "Shrubb Épico", arquivo: "monster_portrait_square_bc_epic.avif" },
+            { nome: "Oaktopus Épico", arquivo: "monster_portrait_square_bd_epic.avif" },
+            { nome: "Furcorn Épico", arquivo: "monster_portrait_square_be_epic.avif" },
+            { nome: "Fwog Épico", arquivo: "monster_portrait_square_cd_epic.avif" },
+            { nome: "Drumpler Épico", arquivo: "monster_portrait_square_ce_epic.avif" },
+            { nome: "Maw Épico", arquivo: "monster_portrait_square_de_epic.avif" },
+            { nome: "Pummel Épico", arquivo: "monster_portrait_square_bcd_epic.avif" },
+            { nome: "Clamble Épico", arquivo: "monster_portrait_square_bce_epic.avif" },
+            { nome: "Bowgart Épico", arquivo: "monster_portrait_square_bde_epic.avif" },
+            { nome: "T-Rox Épico", arquivo: "monster_portrait_square_cde_epic.avif" },
+            { nome: "Entbrat Épico", arquivo: "monster_portrait_square_bcde_epic.avif" }
         ];
 
         let quadradoAtual = null;
 
-        // 1. Preencher a lista do Modal
-        const selectElement = document.getElementById("listaMonstros");
-        monstros.forEach(monstro => {
-            let option = document.createElement("option");
-            option.value = monstro;
-            option.text = monstro;
-            selectElement.appendChild(option);
-        });
-
-        // 2. Criar os 35 quadrados do tabuleiro (5 linhas x 7 colunas)
+        // Cria os 35 quadrados do tabuleiro
         const tabuleiro = document.getElementById("tabuleiro");
         for (let i = 0; i < 35; i++) {
             let div = document.createElement("div");
@@ -141,18 +247,38 @@
             tabuleiro.appendChild(div);
         }
 
-        // 3. Funções do Modal
-        function abrirModal(elementoQuadrado) {
-            quadradoAtual = elementoQuadrado;
+        // Função que desenha a lista dentro da janela
+        function renderizarLista(filtro = "") {
+            const listaContainer = document.getElementById("listaOpcoes");
+            listaContainer.innerHTML = ""; // Limpa a lista atual
+
+            itensData.forEach(item => {
+                // Checa se o nome inclui o que foi digitado (ignorando maiúsculas/minúsculas)
+                if (item.nome.toLowerCase().includes(filtro.toLowerCase())) {
+                    let div = document.createElement("div");
+                    div.className = "item-lista";
+                    div.onclick = () => confirmarMonstro(item);
+                    
+                    let conteudoHTML = "";
+                    if (item.arquivo === "") {
+                        conteudoHTML = `<div style="width:45px; height:45px; margin-right:15px; font-size:30px; text-align:center;">🧹</div> <span>${item.nome}</span>`;
+                    } else {
+                        // Junta o link do GitHub com o nome do arquivo
+                        let linkImagem = urlBase + item.arquivo;
+                        conteudoHTML = `<img src="${linkImagem}" alt="${item.nome}"> <span>${item.nome}</span>`;
+                    }
+
+                    div.innerHTML = conteudoHTML;
+                    listaContainer.appendChild(div);
+                }
+            });
+        }
+
+        function abrirModal(elemento) {
+            quadradoAtual = elemento;
             document.getElementById("modalMonstros").style.display = "flex";
-            
-            // Se o quadrado já tem um nome, seleciona ele na lista
-            let nomeAtual = quadradoAtual.innerText;
-            if (nomeAtual) {
-                selectElement.value = nomeAtual;
-            } else {
-                selectElement.value = monstros[0];
-            }
+            document.getElementById("buscaMonstro").value = ""; // Limpa a busca ao abrir
+            renderizarLista(); // Mostra tudo
         }
 
         function fecharModal() {
@@ -160,30 +286,27 @@
             quadradoAtual = null;
         }
 
-        function confirmarMonstro() {
+        function filtrarLista() {
+            const textoBusca = document.getElementById("buscaMonstro").value;
+            renderizarLista(textoBusca);
+        }
+
+        function confirmarMonstro(item) {
             if (quadradoAtual) {
-                let escolha = selectElement.value;
-                if (escolha === "❓ Desconhecido (Vazio)") {
-                    quadradoAtual.innerText = "";
-                    quadradoAtual.classList.remove("vazio");
-                } else if (escolha === "⬛ Espaço Inexistente") {
-                    quadradoAtual.innerText = "";
-                    quadradoAtual.classList.add("vazio");
+                if (item.arquivo === "") {
+                    quadradoAtual.innerHTML = ""; // Limpa o quadrado, volta a ser roxo puro
                 } else {
-                    quadradoAtual.innerText = escolha;
-                    quadradoAtual.classList.remove("vazio");
+                    let linkImagem = urlBase + item.arquivo;
+                    quadradoAtual.innerHTML = `<img src="${linkImagem}" alt="${item.nome}">`;
                 }
             }
             fecharModal();
         }
 
         function limparTabuleiro() {
-            if(confirm("Tem certeza que deseja apagar todas as marcações?")) {
+            if(confirm("Deseja apagar todas as imagens do tabuleiro?")) {
                 let quadrados = document.querySelectorAll(".quadrado");
-                quadrados.forEach(q => {
-                    q.innerText = "";
-                    q.classList.remove("vazio");
-                });
+                quadrados.forEach(q => q.innerHTML = "");
             }
         }
     </script>
