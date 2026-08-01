@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSM Memory Game</title>
+    <style>
+        body { background-color: #2b1d3d; color: white; font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding-top: 10px; }
+        h2 { text-shadow: 2px 2px 4px #000; text-align: center; margin: 10px 0; font-size: 24px; }
+        
+        .menu-container { display: flex; flex-direction: column; align-items: center; width: 90%; max-width: 400px; margin-top: 30px; }
+        .menu-container h3 { margin-bottom: 20px; font-size: 20px; }
+        .btn-menu { background-color: #794a8d; border: 3px solid #4a295c; color: white; width: 100%; padding: 15px; margin-bottom: 15px; font-size: 18px; font-weight: bold; border-radius: 10px; cursor: pointer; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); transition: transform 0.1s, background-color 0.2s; }
+        .btn-menu:hover, .btn-menu:active { transform: scale(1.05); background-color: #925ba8; }
+        .btn-back-menu { background-color: #f44336; margin-top: 10px; }
+
+        #screenGame { display: none; flex-direction: column; align-items: center; width: 100%; }
+        .top-controls { display: flex; gap: 10px; margin-bottom: 15px; }
+        .btn-top { padding: 10px 15px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .btn-back { background-color: #4CAF50; color: white; }
+        .btn-clear { background-color: #ff9800; color: white; }
+
+        .grid-container { display: grid; gap: 2px; width: 98vw; max-width: 600px; justify-content: center; }
+        .square { background-color: transparent; border: none; display: flex; align-items: center; justify-content: center; aspect-ratio: 1 / 1; }
+        .square.active { cursor: pointer; transition: transform 0.1s; }
+        .square.active:active img { transform: scale(0.9); }
+        .square.empty { pointer-events: none; }
+        .square img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.6)); }
+
+        .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); justify-content: center; align-items: center; }
+        .modal-content { background-color: #4a295c; padding: 15px; border-radius: 10px; border: 2px solid #794a8d; width: 90%; max-width: 350px; display: flex; flex-direction: column; }
+        .modal-content h3 { margin-top: 0; text-align: center; font-size: 18px; }
+        #searchMonster { padding: 10px; border-radius: 5px; border: none; margin-bottom: 10px; font-size: 16px; background-color: #e0d4e8; }
+        .monster-list { display: flex; flex-direction: column; gap: 5px; max-height: 60vh; overflow-y: auto; padding-right: 5px; }
+        .category-title { background-color: #311c47; color: #ffd700; text-align: center; font-weight: bold; padding: 5px; margin-top: 10px; border-radius: 5px; text-transform: uppercase; font-size: 13px; letter-spacing: 1px; border: 1px solid #221233; }
+        .list-item { display: flex; align-items: center; background-color: #3b284f; border: 1px solid #2b1d3d; border-radius: 8px; padding: 5px; cursor: pointer; }
+        .list-item img { width: 45px; height: 45px; object-fit: contain; margin-right: 15px; border-radius: 5px; }
+        .list-item span { font-weight: bold; font-size: 14px; }
+        .list-item:active { background-color: #4CAF50; }
+        .btn-cancel { background-color: #f44336; color: white; width: 100%; padding: 12px; border: none; border-radius: 5px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h2 id="mainTitle">MSM Memory Game</h2>
+
+    <!-- ISLAND MENU -->
+    <div id="screenIslandMenu" class="menu-container">
+        <h3>Choose an Island</h3>
+        <button class="btn-menu" style="background-color: #4CAF50; border-color: #2E7D32;" onclick="selectIsland('plant')">🌿 Plant Island</button>
+        <button class="btn-menu" style="background-color: #2196F3; border-color: #1565C0;" onclick="selectIsland('cold')">❄️ Cold Island</button>
+        <button class="btn-menu" style="background-color: #ff9800; border-color: #e65100;" onclick="selectIsland('air')">☁️ Air Island</button>
+    </div>
+
+    <!-- LEVEL MENU -->
+    <div id="screenLevelMenu" class="menu-container" style="display: none;">
+        <h3>Choose Level Layout</h3>
+        <button class="btn-menu" onclick="startLevel('level8')">Level 8 (🎵)</button>
+        <button class="btn-menu" onclick="startLevel('level9v1')">Level 9 V1 (💜)</button>
+        <button class="btn-menu" onclick="startLevel('level9v2')">Level 9 V2</button>
+        <button class="btn-menu btn-back-menu" onclick="returnToMenu()">🔙 Back</button>
+    </div>
+    
+    <!-- GAME BOARD -->
+    <div id="screenGame">
+        <div class="top-controls">
+            <button class="btn-top btn-back" onclick="exitGame()">🔙 Menu</button>
+            <button class="btn-top btn-clear" onclick="clearBoard()">🧹 Clear</button>
+        </div>
+        <div class="grid-container" id="board"></div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="monsterModal" class="modal">
+        <div class="modal-content">
+            <h3>Choose Image:</h3>
+            <input type="text" id="searchMonster" placeholder="Search..." onkeyup="filterList()">
+            <div id="optionsList" class="monster-list"></div>
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. REUSABLE UTILITIES & CONFIG ---
+        const baseUrl = "https://raw.githubusercontent.com/Repos999/Memory/refs/heads/main/";
+        const getImgUrl = (file) => file ? baseUrl + file : "";
+        const bgImg = "monster_portrait_random.avif";
+        
+        let currentIsland = '', currentLevel = '', itemsToRender = [], currentSquare = null;
+
+        function switchScreen(showId) {
+            ['screenIslandMenu', 'screenLevelMenu', 'screenGame'].forEach(id => {
+                document.getElementById(id).style.display = id === showId ? 'flex' : 'none';
+            });
+        }
+
+        function createEl(tag, className, innerHTML, onClick) {
+            let e = document.createElement(tag);
+            if (className) e.className = className;
+            if (innerHTML) e.innerHTML = innerHTML;
+            if (onClick) e.onclick = function() { onClick(e); };
+            return e;
+        }
+
+        const layouts = {
+            level8: [[1,1,1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1,1,1], [1,0,0,0,0,0,0,0,0,1], [1,0,0,0,0,0,0,0,0,1], [1,0,0,0,0,0,0,0,0,1]],
+            level9v1: [[0,1,1,1,1,1,1,1,0], [1,1,1,1,1,1,1,1,1], [0,1,1,1,1,1,1,1,0], [0,0,1,1,1,1,1,0,0], [0,0,0,1,1,1,0,0,0], [0,0,0,0,1,0,0,0,0]],
+            level9v2: [[1,1,1,1,0,1,1,0], [1,1,1,0,1,1,0,1], [1,1,0,1,1,0,1,1], [1,0,1,1,0,1,1,1], [0,1,1,0,1,1,1,1]]
+        };
+
+        // --- 2. SINGLE DATABASE ---
+        const resourceItems = [
+            { name: "🧹 Restore Square (Clear)", file: "", category: "Resources" },
+            { name: "⬛ Blank Portrait", file: "monster_portrait_blank.avif", category: "Resources" },
+            { name: "Coin", file: "coin.avif", category: "Resources" }, { name: "Treats", file: "food.avif", category: "Resources" },
+            { name: "Shards", file: "shard.avif", category: "Resources" }, { name: "Diamonds", file: "diamond.avif", category: "Resources" },
+            { name: "Starpower", file: "star_power.avif", category: "Resources" }, { name: "Keys", file: "keys.avif", category: "Resources" },
+            { name: "Relics", file: "relic.avif", category: "Resources" }, { name: "XP", file: "xp.avif", category: "Resources" }
+        ];
+
+        const dipsters = ["q01", "q02", "q03", "q04", "q05", "q06", "q07"].map((f, i) => ({
+            name: ["Do", "Re", "Mi", "Fa", "Sol", "La", "Ti"][i], file: `monster_portrait_square_${f}.avif`, category: "Dipsters"
+        }));
+
+        const baseIslands = {
+            plant: {
+                commons: [
+                    { n: "Potbelly", f: "b" }, { n: "Noggin", f: "c" }, { n: "Toe Jammer", f: "d" }, { n: "Mammott", f: "e" },
+                    { n: "Shrubb", f: "bc" }, { n: "Oaktopus", f: "bd" }, { n: "Furcorn", f: "be" }, { n: "Fwog", f: "cd" },
+                    { n: "Drumpler", f: "ce" }, { n: "Maw", f: "de" }, { n: "Pummel", f: "bcd" }, { n: "Clamble", f: "bce" },
+                    { n: "Bowgart", f: "bde" }, { n: "T-Rox", f: "cde" }, { n: "Entbrat", f: "bcde" }, { n: "Wubbox", f: "f" },
+                    { n: "Ghazt", f: "g" }, { n: "G'joob", f: "p02" }, { n: "Punkleton", f: "s01" }
+                ],
+                specials: [{ n: "Shugabush", f: "z01" }, { n: "Tawkerr", f: "VOC_01" }, { n: "Parlsona", f: "VOC_02" }]
+            },
+            cold: {
+                commons: [
+                    { n: "Mammott", f: "e" }, { n: "Toe Jammer", f: "d" }, { n: "Potbelly", f: "b" }, { n: "Tweedle", f: "a" },
+                    { n: "Maw", f: "de" }, { n: "Furcorn", f: "be" }, { n: "Oaktopus", f: "bd" }, { n: "Dandidoo", f: "ab" },
+                    { n: "Pango", f: "ae" }, { n: "Quibble", f: "ad" }, { n: "Bowgart", f: "bde" }, { n: "Spunge", f: "abd" },
+                    { n: "Thumpies", f: "abe" }, { n: "Congle", f: "ade" }, { n: "Deedge", f: "abde" }, { n: "Wubbox", f: "f" },
+                    { n: "Grumpyre", f: "j" }, { n: "Yool", f: "s02" }, { n: "Strombonin", f: "p03" }
+                ],
+                specials: [{ n: "bbli$zard", f: "z09" }, { n: "Tawkerr", f: "VOC_01" }, { n: "Maggpi", f: "VOC_04" }]
+            },
+            air: {
+                commons: [
+                    { n: "Tweedle", f: "a" }, { n: "Noggin", f: "c" }, { n: "Toe Jammer", f: "d" }, { n: "Mammott", f: "e" },
+                    { n: "Cybop", f: "ac" }, { n: "Quibble", f: "ad" }, { n: "Pango", f: "ae" }, { n: "Fwog", f: "cd" },
+                    { n: "Drumpler", f: "ce" }, { n: "Maw", f: "de" }, { n: "Scups", f: "acd" }, { n: "PomPom", f: "ace" },
+                    { n: "Congle", f: "ade" }, { n: "T-Rox", f: "cde" }, { n: "Riff", f: "acde" }, { n: "Wubbox", f: "f" },
+                    { n: "Reebro", f: "k" }, { n: "Schmoochle", f: "s03" }, { n: "Hoola", f: "s05" }, { n: "Yawstrich", f: "p01" }
+                ],
+                specials: [{ n: "Parlsona", f: "VOC_02" }, { n: "Stoowarb", f: "VOC_03" }]
+            }
+        };
+
+        // --- 3. AUTO-GENERATOR ---
+        function getIslandItems(islandKey) {
+            let list = [...resourceItems];
+            let data = baseIslands[islandKey];
+            
+            data.commons.forEach(m => list.push({ name: m.n, file: `monster_portrait_square_${m.f}.avif`, category: "Common" }));
+            data.commons.forEach(m => list.push({ name: `Rare ${m.n}`, file: `monster_portrait_square_${m.f}_rare.avif`, category: "Rare" }));
+            data.commons.forEach(m => {
+                let f = m.n === "Wubbox" ? `f_epic_${islandKey}` : `${m.f}_epic`;
+                list.push({ name: `Epic ${m.n}`, file: `monster_portrait_square_${f}.avif`, category: "Epic" });
+            });
+            data.specials.forEach(m => list.push({ name: m.n, file: `monster_portrait_square_${m.f}.avif`, category: "Specials" }));
+            
+            return list.concat(dipsters);
+        }
+
+        // --- 4. BROWSER PROTECTIONS ---
+        window.addEventListener('beforeunload', (e) => {
+            if (document.getElementById('screenGame').style.display === 'flex') {
+                e.preventDefault(); e.returnValue = ''; 
+            }
+        });
+
+        window.onload = () => {
+            const savedData = localStorage.getItem('msmMemoryData');
+            if (savedData && confirm("You have a game in progress. Do you want to resume?")) {
+                resumeGameState(JSON.parse(savedData));
+            } else {
+                localStorage.removeItem('msmMemoryData');
+            }
+        };
+
+        function saveGameState() {
+            let boardState = [];
+            document.querySelectorAll("#board .square").forEach(sq => {
+                if (sq.classList.contains('active')) {
+                    const img = sq.querySelector('img');
+                    boardState.push(img ? img.getAttribute('src').replace(baseUrl, '') : bgImg);
+                } else {
+                    boardState.push('emptySquare');
+                }
+            });
+            localStorage.setItem('msmMemoryData', JSON.stringify({ island: currentIsland, level: currentLevel, board: boardState }));
+        }
+
+        // --- 5. NAVIGATION & RENDER ---
+        function selectIsland(island) {
+            currentIsland = island;
+            itemsToRender = getIslandItems(island);
+            document.getElementById('mainTitle').innerText = `MSM Memory Game - ${island.charAt(0).toUpperCase() + island.slice(1)} Island`;
+            switchScreen('screenLevelMenu');
+        }
+
+        function returnToMenu() {
+            switchScreen('screenIslandMenu');
+            document.getElementById('mainTitle').innerText = "MSM Memory Game";
+        }
+
+        function exitGame() {
+            if (confirm("Are you sure you want to leave? Your board will be reset.")) {
+                localStorage.removeItem('msmMemoryData');
+                returnToMenu();
+            }
+        }
+
+        function startLevel(levelId) {
+            currentLevel = levelId;
+            switchScreen('screenGame');
+            const layoutMatrix = layouts[levelId];
+            const board = document.getElementById("board");
+            board.style.gridTemplateColumns = `repeat(${layoutMatrix[0].length}, 1fr)`;
+            board.innerHTML = ""; 
+
+            layoutMatrix.forEach(row => row.forEach(cell => {
+                board.appendChild(cell === 1 
+                    ? createEl("div", "square active", `<img src="${getImgUrl(bgImg)}">`, (el) => openModal(el))
+                    : createEl("div", "square empty")
+                );
+            }));
+            saveGameState();
+        }
+
+        function resumeGameState(state) {
+            currentIsland = state.island;
+            currentLevel = state.level;
+            itemsToRender = getIslandItems(currentIsland);
+            document.getElementById('mainTitle').innerText = `MSM Memory Game - ${currentIsland.charAt(0).toUpperCase() + currentIsland.slice(1)} Island`;
+            switchScreen('screenGame');
+
+            const board = document.getElementById("board");
+            board.style.gridTemplateColumns = `repeat(${layouts[currentLevel][0].length}, 1fr)`;
+            board.innerHTML = ""; 
+
+            state.board.forEach(cell => {
+                board.appendChild(cell === 'emptySquare'
+                    ? createEl("div", "square empty")
+                    : createEl("div", "square active", `<img src="${getImgUrl(cell)}">`, (el) => openModal(el))
+                );
+            });
+        }
+
+        // --- 6. MODAL & LIST LOGIC ---
+        function renderList(filterText = "") {
+            const listContainer = document.getElementById("optionsList");
+            listContainer.innerHTML = ""; 
+            let currentRenderedCategory = ""; 
+
+            itemsToRender.filter(i => i.name.toLowerCase().includes(filterText.toLowerCase())).forEach(item => {
+                if (item.category !== currentRenderedCategory) {
+                    currentRenderedCategory = item.category;
+                    if (currentRenderedCategory !== "Resources") {
+                        listContainer.appendChild(createEl("div", "category-title", currentRenderedCategory));
+                    }
+                }
+                
+                let contentHTML = item.file === "" 
+                    ? `<div style="width:45px; height:45px; margin-right:15px; font-size:30px; text-align:center;">🧹</div> <span>${item.name}</span>`
+                    : `<img src="${getImgUrl(item.file)}" alt="${item.name}"> <span>${item.name}</span>`;
+
+                listContainer.appendChild(createEl("div", "list-item", contentHTML, () => confirmMonster(item)));
+            });
+        }
+
+        function openModal(element) {
+            currentSquare = element;
+            document.getElementById("monsterModal").style.display = "flex";
+            document.getElementById("searchMonster").value = "";
+            renderList();
+        }
+
+        function closeModal() {
+            document.getElementById("monsterModal").style.display = "none";
+            currentSquare = null;
+        }
+
+        function filterList() { renderList(document.getElementById("searchMonster").value); }
+
+        function confirmMonster(item) {
+            if (currentSquare) {
+                currentSquare.innerHTML = item.file === "" 
+                    ? `<img src="${getImgUrl(bgImg)}" alt="Card Back">` 
+                    : `<img src="${getImgUrl(item.file)}" alt="${item.name}">`;
+                saveGameState();
+            }
+            closeModal();
+        }
+
+        function clearBoard() {
+            if(confirm("Do you want to clear all selections and flip the cards face down?")) {
+                document.querySelectorAll(".square.active").forEach(sq => sq.innerHTML = `<img src="${getImgUrl(bgImg)}" alt="Card Back">`);
+                saveGameState();
+            }
+        }
+    </script>
+</body>
+</html>
